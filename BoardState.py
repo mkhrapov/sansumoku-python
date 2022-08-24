@@ -1,5 +1,5 @@
 from __future__ import annotations
-from array import array
+
 
 OPEN = 0
 BLUE = 1
@@ -56,19 +56,17 @@ zeroes = [
     0, 0, 0,   0, 0, 0,   0, 0, 0
 ]
 
-array_ones = array("B", ones)
-array_zeroes = array("B", zeroes)
 
 class BoardState:
     def __init__(self):
         # OPEN, BLUE, ORAN
-        self.cellOccupied = array_zeroes
+        self.cellOccupied = zeroes.copy()
 
         # 0 - 9: zero if cell empty, 1 - 9 if cell played
-        self.cellValue = array_zeroes
+        self.cellValue = zeroes.copy()
 
         # is cell allowed - 1 - true, 0 - false
-        self.cellAllowed = array_ones
+        self.cellAllowed = ones.copy()
 
         # OPEN, BLUE, ORAN, DONE: done means full, but not won
         self.sectionWon = [OPEN, OPEN, OPEN,    OPEN, OPEN, OPEN,    OPEN, OPEN, OPEN]
@@ -111,9 +109,9 @@ class BoardState:
     def clone(self) -> BoardState:
         child = BoardState()
 
-        child.cellOccupied = array("B", self.cellOccupied)
-        child.cellValue = array("B", self.cellValue)
-        child.cellAllowed = array("B", self.cellAllowed)
+        child.cellOccupied = self.cellOccupied.copy()
+        child.cellValue = self.cellValue.copy()
+        child.cellAllowed = self.cellAllowed.copy()
 
         child.sectionWon = self.sectionWon.copy()
         child.sectionAllowed = self.sectionAllowed.copy()
@@ -221,11 +219,11 @@ class BoardState:
             self.gameWon = DONE
         else:
             for i in range(9):
-                self.sectionAllowed = False
+                self.sectionAllowed[i] = False
 
             for i in range(9):
                 if self.sectionWon[i] == OPEN:
-                    self.sectionAllowed = True
+                    self.sectionAllowed[i] = True
 
             # figured out allowed cells
             for section in range(9):
@@ -254,6 +252,7 @@ class BoardState:
 
     def won(self, player: int, section: int) -> bool:
         locations = self.sectionLocations(section)
+
         listOfIndexes = [
             [0, 1, 2],
             [3, 4, 5],
@@ -266,8 +265,13 @@ class BoardState:
         ]
 
         for indexes in listOfIndexes:
-            if self.cellOccupied[locations[indexes[0]]] == player and self.cellOccupied[locations[indexes[1]]] == player and self.cellOccupied[locations[indexes[2]]] == player:
+            a = self.cellOccupied[locations[indexes[0]]] == player
+            b = self.cellOccupied[locations[indexes[1]]] == player
+            c = self.cellOccupied[locations[indexes[2]]] == player
+
+            if a and b and c:
                 return True
+
         return False
 
 
@@ -276,13 +280,13 @@ class BoardState:
 
         if section < 3:
             for i in range(9):
-                locations[i] += section*3
+                locations[i] += (section*3)
         elif section < 6:
             for i in range(9):
-                locations[i] += 27 + (section-3)*3
+                locations[i] += (27 + (section-3)*3)
         else:
             for i in range(9):
-                locations[i] += 54 + (section-6)*3
+                locations[i] += (54 + (section-6)*3)
 
         return locations
 
@@ -338,13 +342,17 @@ class BoardState:
 
         for g in SUDOKU_GROUPS:
             if cell in g:
-                p.union(g)
+                p = p.union(g)
 
         p.remove(cell)
+        toBeRemoved = []
 
         for otherCell in p:
             if self.constraintRemoved(otherCell):
-                p.remove(otherCell)
+                toBeRemoved.append(otherCell)
+
+        for otherCell in toBeRemoved:
+            p.remove(otherCell)
 
         return p
 
